@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { OpticalConfig } from '../types';
 import { DEFAULT_SCRIPT } from '../sampleScript';
 
-const SCRIPT_STORAGE_KEY = 'proteleprompter_script_v1';
-const CONFIG_STORAGE_KEY = 'proteleprompter_config_v1';
+const SCRIPT_STORAGE_KEY = 'proteleprompter_script_v2';
+const CONFIG_STORAGE_KEY = 'proteleprompter_config_v2';
 
 export const DEFAULT_OPTICAL_CONFIG: OpticalConfig = {
   anchorPosition: 'top',
