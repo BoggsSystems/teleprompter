@@ -1,6 +1,7 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, Settings, List, Edit3, Maximize, Minimize } from 'lucide-react';
+import { Play, Pause, RotateCcw, Settings, List, Edit3, Maximize, Minimize, Video, VideoOff, Square } from 'lucide-react';
 import { PrompterState, OpticalConfig, ScriptToken } from '../types';
+import { RecordingState } from '../hooks/useMediaRecorder';
 import { formatTime, calculateEstimatedSeconds, calculatePacingDelta } from '../utils/pacingCalculator';
 
 interface PacingHUDProps {
@@ -20,6 +21,12 @@ interface PacingHUDProps {
   onToggleFullscreen: () => void;
   isFullscreen: boolean;
   activeSectionTitle?: string;
+  recordingState: RecordingState;
+  recordingDurationSec: number;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
+  showCameraPreview: boolean;
+  onToggleCameraPreview: () => void;
 }
 
 export const PacingHUD: React.FC<PacingHUDProps> = ({
@@ -39,6 +46,12 @@ export const PacingHUD: React.FC<PacingHUDProps> = ({
   onToggleFullscreen,
   isFullscreen,
   activeSectionTitle,
+  recordingState,
+  recordingDurationSec,
+  onStartRecording,
+  onStopRecording,
+  showCameraPreview,
+  onToggleCameraPreview,
 }) => {
   const estimatedTotalSec = calculateEstimatedSeconds(totalWordCount, config.targetWpm);
   const remainingSec = Math.max(0, estimatedTotalSec - elapsedSeconds);
@@ -74,7 +87,7 @@ export const PacingHUD: React.FC<PacingHUDProps> = ({
         {/* Main Floating Glass HUD Bar */}
         <div className="pointer-events-auto w-full bg-neutral-900/90 hover:bg-neutral-900/95 transition-all duration-200 border border-neutral-700/60 rounded-2xl shadow-2xl backdrop-blur-xl px-4 py-2.5 flex items-center justify-between gap-4">
           
-          {/* Left: Play/Pause, Reset & State Pill */}
+          {/* Left: Play/Pause, Record, Reset & State Pill */}
           <div className="flex items-center gap-2">
             <button
               onClick={onTogglePlay}
@@ -97,6 +110,32 @@ export const PacingHUD: React.FC<PacingHUDProps> = ({
                 </>
               )}
             </button>
+
+            {/* In-App Video Record Button */}
+            {recordingState === 'RECORDING' ? (
+              <button
+                onClick={onStopRecording}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/40 animate-pulse transition-all"
+                title="Stop Recording and Save Video"
+              >
+                <Square size={13} className="fill-current" />
+                <span>REC {formatTime(recordingDurationSec)}</span>
+              </button>
+            ) : recordingState === 'COUNTDOWN' ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-bold bg-rose-500/20 border border-rose-500/60 text-rose-300 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span>Starting...</span>
+              </div>
+            ) : (
+              <button
+                onClick={onStartRecording}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-rose-950/50 hover:bg-rose-900/80 text-rose-300 border border-rose-700/60 transition-all hover:scale-105 active:scale-95 shadow-sm"
+                title="Record video take directly in app"
+              >
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
+                <span>Record</span>
+              </button>
+            )}
 
             <button
               onClick={onReset}
@@ -199,6 +238,19 @@ export const PacingHUD: React.FC<PacingHUDProps> = ({
               title="Table of Contents / Jump Sections"
             >
               <List size={16} />
+            </button>
+
+            {/* Camera Preview Background Toggle */}
+            <button
+              onClick={onToggleCameraPreview}
+              className={`p-1.5 rounded-xl transition-all border ${
+                showCameraPreview
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400 border-neutral-700/50'
+              }`}
+              title={showCameraPreview ? 'Hide Camera Preview' : 'Show Camera Preview Behind Text'}
+            >
+              {showCameraPreview ? <Video size={16} /> : <VideoOff size={16} />}
             </button>
 
             {/* Settings Overlay Button */}

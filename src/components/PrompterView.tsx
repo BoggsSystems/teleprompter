@@ -2,10 +2,12 @@ import React, { useRef, useMemo } from 'react';
 import { OpticalConfig, ScriptToken, SectionHeader } from '../types';
 import { useScrollEngine } from '../hooks/useScrollEngine';
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
+import { useMediaRecorder } from '../hooks/useMediaRecorder';
 import { ReadingAnchorGuide } from './ReadingAnchorGuide';
 import { PacingHUD } from './PacingHUD';
 import { SectionNav } from './SectionNav';
 import { ControlOverlay } from './ControlOverlay';
+import { VideoReviewModal } from './VideoReviewModal';
 
 interface PrompterViewProps {
   tokens: ScriptToken[];
@@ -41,6 +43,8 @@ export const PrompterView: React.FC<PrompterViewProps> = ({
     currentWordIndex,
     cuePauseRemaining,
     activeCue,
+    play,
+    pause,
     togglePlayPause,
     resetToStart,
     seekToTokenId,
@@ -50,6 +54,28 @@ export const PrompterView: React.FC<PrompterViewProps> = ({
     config,
     containerRef,
     contentRef,
+  });
+
+  const {
+    recordingState,
+    countdown,
+    recordingDurationSec,
+    recordedBlobUrl,
+    showCameraPreview,
+    previewOpacity,
+    videoPreviewRef,
+    startRecordingFlow,
+    stopRecording,
+    dismissReview,
+    downloadRecording,
+    setShowCameraPreview,
+  } = useMediaRecorder({
+    onStartScroll: () => {
+      play();
+    },
+    onStopScroll: () => {
+      pause();
+    },
   });
 
   const handleNextSection = () => {
@@ -138,6 +164,36 @@ export const PrompterView: React.FC<PrompterViewProps> = ({
       onWheel={handleWheel}
       className={`relative w-screen h-screen overflow-hidden select-none cursor-default transition-colors duration-300 ${themeClasses.bg}`}
     >
+      {/* Optional Mirrored Camera Preview Behind Script */}
+      {showCameraPreview && (
+        <div
+          className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center transition-opacity duration-500 z-0"
+          style={{ opacity: previewOpacity }}
+        >
+          <video
+            ref={videoPreviewRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover transform -scale-x-100"
+          />
+        </div>
+      )}
+
+      {/* 3-2-1 Countdown Overlay */}
+      {recordingState === 'COUNTDOWN' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md pointer-events-none animate-in fade-in duration-200">
+          <div className="flex flex-col items-center">
+            <div className="text-9xl font-black font-mono text-rose-500 drop-shadow-[0_0_50px_rgba(244,63,94,0.9)] animate-ping">
+              {countdown}
+            </div>
+            <div className="text-sm font-semibold uppercase tracking-widest text-white mt-8 bg-neutral-900/90 px-6 py-2 rounded-full border border-neutral-700 shadow-xl">
+              Get Ready • Take Starting
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Visual Reading Anchor Line & Vignette */}
       <ReadingAnchorGuide config={config} />
 
@@ -159,6 +215,25 @@ export const PrompterView: React.FC<PrompterViewProps> = ({
         onToggleFullscreen={onToggleFullscreen}
         isFullscreen={isFullscreen}
         activeSectionTitle={activeSectionTitle}
+        recordingState={recordingState}
+        recordingDurationSec={recordingDurationSec}
+        onStartRecording={startRecordingFlow}
+        onStopRecording={stopRecording}
+        showCameraPreview={showCameraPreview}
+        onToggleCameraPreview={() => setShowCameraPreview((prev) => !prev)}
+      />
+
+      {/* Video Review Modal */}
+      <VideoReviewModal
+        isOpen={recordingState === 'STOPPED' && recordedBlobUrl !== null}
+        videoUrl={recordedBlobUrl}
+        durationSeconds={recordingDurationSec}
+        onDownload={downloadRecording}
+        onRetake={() => {
+          dismissReview();
+          resetToStart();
+        }}
+        onClose={dismissReview}
       />
 
       {/* Table of Contents Modal */}
